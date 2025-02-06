@@ -50,9 +50,70 @@
 - 识别冗余/冲突条件组合
 ---
 
-这个提示词的特点：
-1. 多维度分析：同时覆盖Python和SQL的语法特性
-2. 上下文感知：跟踪变量传递和参数化查询
-3. 结构化解构：将条件拆解为可解释的标准化元素
-4. 可视化输出：便于快速定位和理解复杂条件逻辑
-5. 异常检测：自动识别可能的问题条件
+**Prompt for Analyzing Customer Filtering Scripts (Python/SQL)**  
+---
+
+**Objective**  
+Analyze Python/SQL scripts designed to filter customer data based on criteria and generate a customer list. Extract and catalog all filtering conditions with contextual metadata.
+
+---
+
+### **Analysis Instructions**  
+1. **Code Structure Identification**  
+   - Separate Python and SQL code blocks.  
+   - Identify data source connections (e.g., `pandas.read_sql`, SQLAlchemy, direct database connectors).  
+   - Flag all filtering operations (e.g., SQL `WHERE`, Python `df.query()`, list comprehensions).  
+
+2. **Condition Extraction Rules**  
+   **For SQL Scripts**:  
+   - Parse `WHERE`/`HAVING`/`ON` (JOIN) clauses.  
+   - Extract conditions from dynamic queries (e.g., `@variable`, `?` placeholders).  
+   - Decode nested `CASE WHEN` logic and subqueries.  
+
+   **For Python Scripts**:  
+   - Analyze `pandas` operations: `df[df['column'] > value]`, `df.query()`, `df.filter()`.  
+   - Trace variables/parameters used in conditional logic (e.g., `start_date`, `min_revenue`).  
+   - Inspect custom functions and loops for implicit filtering.  
+
+3. **Structured Output Format**  
+   For each condition, generate:  
+   ```json  
+   {  
+     "id": "Condition_01",  
+     "type": "Geographic | Temporal | Behavioral | ...",  
+     "expression": "country = 'US' AND registration_date BETWEEN ? AND ?",  
+     "parameters": ["start_date", "end_date"],  
+     "source": {  
+       "file": "filter_customers.py",  
+       "line": 28,  
+       "code_snippet": "df = df[df['status'] == 'active']"  
+     },  
+     "hardcoded_values": ["active"],  
+     "dependencies": ["external_config.csv"],  
+     "logic_operator": "AND/OR/NOT"  
+   }  
+   ```  
+
+4. **Reporting Requirements**  
+   Generate a Markdown report containing:  
+   - **Summary Table**: Condition types, frequency, parameter dependencies.  
+   - **Logic Map**: Visualize relationships between conditions (e.g., Mermaid flowchart).  
+   - **Parameter Tracking**: List all dynamic variables and their sources.  
+   - **Conflict Detection**: Highlight overlapping/redundant conditions (e.g., `age > 18` vs `age >= 21`).  
+
+---
+
+### **Special Guidelines**  
+- Preserve nested logic hierarchies (e.g., parent-child conditions).  
+- Differentiate between hardcoded values and parameterized inputs.  
+- Flag conditions prone to null/empty results (e.g., `WHERE revenue IS NULL`).  
+- Identify security risks (e.g., SQL injection patterns in raw queries).  
+
+--- 
+
+**Example Trigger**  
+```  
+Analyze the attached Python/SQL scripts:  
+- Script 1: `customer_segment.py` (uses Pandas + SQLAlchemy)  
+- Script 2: `active_users.sql` (includes JOINs and CASE statements)  
+```  
