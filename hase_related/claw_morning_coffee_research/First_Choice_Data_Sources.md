@@ -222,6 +222,264 @@ series_id = "SP500"
 
 ---
 
+
+---
+
+## 6. AI 与新兴技术数据源（AI & Emerging Tech）
+
+### 6.1 顶级 AI 研究机构官方博客（Tier 1）
+
+#### 主要 AI 实验室官方 RSS
+
+| 机构 | RSS Feed URL | 更新频率 | 内容类型 | 权重 |
+|------|-------------|---------|---------|------|
+| **OpenAI News** [^14^][^75^][^78^] | `https://openai.com/news/rss.xml` | 每周 | GPT 更新、研究发布、产品公告 | P0 |
+| **Google DeepMind** [^75^][^77^][^78^] | `https://deepmind.google/blog/rss.xml` | 1-2次/周 | Gemini、AlphaFold、强化学习突破 | P0 |
+| **Google AI Blog** [^76^][^77^][^78^] | `https://blog.google/technology/ai/rss/` | 实时 | 模型与平台公告、应用案例 | P0 |
+| **Google Research** [^75^][^81^] | `https://research.google/blog/rss/` | 1-2次/周 | 基础研究、论文解读 | P0 |
+| **BAIR (Berkeley AI Research)** [^75^][^76^] | `https://bair.berkeley.edu/blog/feed.xml` | 每月2次 | 机器人、NLP、计算机视觉、强化学习 | P1 |
+| **Stanford AI Lab** [^76^] | `https://ai.stanford.edu/blog/feed.xml` | 每月 | 前沿研究、学术讨论 | P1 |
+| **CMU Machine Learning Blog** [^76^] | `https://blog.ml.cmu.edu/feed` | 双周 | 机器学习研究、教学资源 | P1 |
+| **MIT Technology Review - AI** [^79^][^14^] | `https://www.technologyreview.com/topic/artificial-intelligence/feed/` | 每日 | 编辑分析、行业背景、商业影响 | P0 |
+| **MIT News - AI** [^79^] | `https://news.mit.edu/rss/topic/artificial-intelligence2` | 每周 | MIT 研究成果、技术突破 | P1 |
+| **MIRI (Machine Intelligence Research)** [^79^] | `https://intelligence.org/feed` | 每月 | AI 安全、对齐研究、数学理论 | P2 |
+
+#### 重要提示：无官方 RSS 的 AI 公司（需使用替代方案）
+
+| 公司 | 替代方案 | 说明 |
+|------|---------|------|
+| **Anthropic** [^90^][^94^] | 社区生成 RSS: `https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml` | 官方无 RSS，但有第三方维护 [^75^] |
+| **Anthropic Engineering** [^90^][^94^] | `https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml` | 工程团队博客 |
+| **Anthropic Research** [^94^] | `https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_research.xml` | 研究论文发布 |
+| **xAI** [^94^] | `https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xainews.xml` | 马斯克 xAI 新闻 |
+| **Ollama** [^94^] | `https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_ollama.xml` | 本地 LLM 工具 |
+
+### 6.2 AI 论文与学术预印本
+
+| 数据源 | RSS Feed URL | 内容 | 更新频率 |
+|--------|-------------|------|----------|
+| **arXiv CS.AI** [^77^][^78^] | `https://rss.arxiv.org/rss/cs.AI` | 人工智能论文 | 每日 |
+| **arXiv CS.LG** [^76^][^77^] | `https://rss.arxiv.org/rss/cs.LG` | 机器学习论文 | 每日 |
+| **arXiv CS.CL** [^77^][^78^] | `https://rss.arxiv.org/rss/cs.CL` | 计算语言学/NLP | 每日 |
+| **arXiv CS.CV** | `https://rss.arxiv.org/rss/cs.CV` | 计算机视觉 | 每日 |
+| **arXiv CS.RO** | `https://rss.arxiv.org/rss/cs.RO` | 机器人学 | 每日 |
+| **Distill.pub** [^76^] | `https://distill.pub/rss.xml` | 高质量可视化论文解释 | 不定期 |
+| **Papers With Code** [^81^] | `https://paperswithcode.com/latest` | 带代码的最新论文 | 每日 |
+| **Google Research** [^76^] | `https://feeds.feedburner.com/blogspot/gJZg` | Google 研究博客 | 每周 |
+
+### 6.3 AI 行业新闻与开发者社区
+
+#### 专业 AI 媒体（Tier 1）
+
+| 媒体 | RSS Feed URL | 特点 | 权重 |
+|------|-------------|------|------|
+| **Hugging Face Blog** [^14^][^75^][^76^] | `https://huggingface.co/blog/feed.xml` | 开源模型、工具更新、教程 | P0 |
+| **Towards Data Science** [^76^] | `https://towardsdatascience.com/feed` | Medium 最大数据科学社区 | P1 |
+| **KDnuggets** [^76^] | `https://kdnuggets.com/feed` | 数据科学、AI 新闻、教程 | P1 |
+| **VentureBeat - AI** [^83^][^84^][^85^] | `https://venturebeat.com/category/ai/feed` | AI 商业应用深度报道 | P1 |
+| **TechCrunch - AI** [^83^][^84^] | `https://techcrunch.com/category/artificial-intelligence/feed` | 初创公司、投资新闻 | P1 |
+| **MarkTechPost** [^14^][^76^] | `https://marktechpost.com/feed/` | AI 论文摘要、快速发布 | P2 |
+| **O'Reilly AI & ML** [^79^][^76^] | `https://oreilly.com/radar/topics/ai-ml` | 行业洞察、技术趋势 | P1 |
+| **Synced (机器之心)** [^78^] | `https://www.jiqizhixin.com/rss` | 中文顶尖 AI 媒体 | P1 |
+| **AI News** [^83^][^84^] | `https://www.artificialintelligence-news.com/feed/rss/` | AI 新闻聚合 | P2 |
+| **Data Machina** [^83^][^84^] | `https://datamachina.substack.com/feed` | 每周 AI/ML 研究进展 | P2 |
+
+#### 开发者社区与讨论
+
+| 平台 | 数据源 | 获取方式 | 内容类型 |
+|------|--------|---------|----------|
+| **Hacker News** [^77^][^78^] | AI 相关讨论 | `https://hnrss.org/newest?q=AI` | 技术社区热点 |
+| **Hacker News** | LLM 相关 | `https://hnrss.org/newest?q=LLM` | 大模型讨论 |
+| **Hacker News** | ChatGPT 相关 | `https://hnrss.org/newest?q=ChatGPT` | OpenAI 产品讨论 |
+| **Reddit r/MachineLearning** | 社区聚合 | 需 RSSHub 或第三方 | 研究讨论、资源分享 |
+| **Reddit r/LocalLLaMA** | 本地模型讨论 | 需 RSSHub 或第三方 | 开源模型、硬件讨论 |
+
+#### 个人博客与意见领袖（Andrej Karpathy 推荐精选）
+
+| 博主 | RSS Feed URL | 专长领域 | 更新频率 |
+|------|-------------|---------|----------|
+| **Simon Willison** [^76^][^88^] | `https://simonwillison.net/atom/everything/` | LLM 应用、代码实测、Django | 持续 |
+| **Andrej Karpathy** | `https://karpathy.bearblog.dev/feed/` | AI 研究、教育、行业洞察 | 不定期 |
+| **Julia Evans** [^76^] | `https://jvns.ca/atom.xml` | 底层技术、漫画解释 | 每周 |
+| **Terence Tao (陶哲轩)** | `https://terrytao.wordpress.com/feed/` | 数学理论、AI 数学基础 | 不定期 |
+| **Scott Aaronson** [^104^] | `https://scottaaronson.blog/?feed=rss2` | 量子计算、计算复杂性、AI 安全 | 不定期 |
+| **Machine Learning Mastery** [^76^] | `https://feeds.feedburner.com/MachineLearningMastery` | 入门教程、实用指南 | 每周 |
+| **Chip Huyen** | `https://huyenchip.com/feed.xml` | ML 工程、系统设计 | 每月 |
+
+### 6.4 加密货币与区块链（Web3 & Blockchain）
+
+#### Tier 1 权威加密媒体
+
+| 媒体 | RSS Feed URL | 特点 | 权重 |
+|------|-------------|------|------|
+| **CoinDesk** [^91^][^93^] | `https://coindesk.com/feed` | 加密行业领导者、新闻+数据 | P0 |
+| **Cointelegraph** [^91^][^93^] | `https://cointelegraph.com/rss` | 多语言、涵盖 DeFi/NFT/监管 | P0 |
+| **The Block** [^91^] | `https://theblock.co/rss` | 机构级分析、研究深入 | P1 |
+| **Decrypt** [^91^] | `https://decrypt.co/feed` | 用户友好、教育性强 | P1 |
+| **Bitcoin Magazine** [^91^] | `https://bitcoinmagazine.com/feed` | 比特币生态权威 | P1 |
+| **Messari** [^91^] | `https://messari.io/rss` | 研究驱动、数据丰富 | P1 |
+| **CryptoSlate** [^93^] | `https://cryptoslate.com/feed` | 新闻+数据+分析 | P2 |
+
+#### 区块链数据与分析
+
+| 数据源 | 类型 | API/RSS 可用性 | 说明 |
+|--------|------|---------------|------|
+| **CoinMarketCap** | 市场数据 | API (付费) | 市值、交易量排名 |
+| **CoinGecko** | 市场数据 | API (免费额度) | 替代 CoinMarketCap |
+| **Glassnode** | 链上分析 | API (付费) | 比特币/以太坊链上指标 |
+| **Dune Analytics** | 链上数据 | 需导出 | 社区创建的分析仪表板 |
+| **Etherscan** | 交易数据 | API (免费+付费) | 以太坊区块链浏览器 |
+
+### 6.5 量子计算（Quantum Computing）
+
+#### 主要量子计算公司官方源
+
+| 公司/机构 | RSS/新闻源 | 类型 | 说明 |
+|-----------|-----------|------|------|
+| **IBM Quantum** [^99^][^104^] | `https://research.ibm.com/quantum-computing/rss` (推测) | 硬件+软件 | 量子计算领导者 |
+| **Google Quantum AI** [^99^] | 通过 Google Research Blog | 研究进展 | 量子霸权里程碑 |
+| **Microsoft Quantum** [^99^] | 官方博客 | 云量子计算 | Azure Quantum |
+| **IonQ** [^99^] | 官方新闻 | 离子阱量子计算 | 上市公司 |
+| **Rigetti Computing** [^99^] | 官方新闻 | 超导量子计算 | 量子云服务 |
+| **D-Wave Systems** [^99^] | 官方新闻 | 量子退火 | 专注优化问题 |
+| **QuEra Computing** [^99^] | 官方新闻 | 中性原子 | 哈佛/麻省理工衍生 |
+| **Xanadu** [^99^] | 官方新闻 | 光量子计算 | PennyLane 框架 |
+
+#### 量子计算新闻聚合与学术
+
+| 数据源 | URL/Feed | 内容类型 |
+|--------|---------|----------|
+| **QuantumNews.ai** [^99^] | `https://quantumnews.ai/` | 聚合 120+ 量子新闻源 |
+| **Quantum Computing Report** [^101^] | `https://quantumcomputingreport.com/` | 行业分析、投资新闻 |
+| **The Quantum Insider** [^104^] | `https://thequantuminsider.com/` | 市场情报、公司动态 |
+| **arXiv Quantum Physics** [^99^] | `https://rss.arxiv.org/rss/quant-ph` | 量子物理论文 |
+| **Qiskit Blog** [^104^] | `https://medium.com/feed/qiskit` | IBM 量子开发框架 |
+| **QuTech Blog** [^104^] | `https://blog.qutech.nl/feed` | 代尔夫特理工/荷兰 |
+| **Scott Aaronson Blog** [^104^] | `https://scottaaronson.blog/?feed=rss2` | 理论计算机科学、量子计算 |
+
+### 6.6 增强现实与虚拟现实（AR/VR/XR）
+
+| 媒体 | RSS Feed URL | 特点 | 权重 |
+|------|-------------|------|------|
+| **Road to VR** [^89^] | `https://roadtovr.com/feed` | 消费者 VR 行业领导者 | P0 |
+| **Upload VR** [^89^] | `https://uploadvr.com/feed` | XR 行业新闻、评测 | P0 |
+| **The Ghost Howls** [^89^] | `https://skarredghost.com/feed` | VR 创业、技术分析 | P1 |
+| **Hypergrid Business** [^89^] | `https://hypergridbusiness.com/feed` | 企业 VR/AR 应用 | P1 |
+| **Game Developer - XR** [^89^] | `https://gamedeveloper.com/rss.xml` | VR 游戏开发 | P2 |
+| **Mixed Reality News** | 第三方聚合 | 微软 HoloLens/MR | P2 |
+
+### 6.7 其他新兴技术
+
+#### 生物技术（Biotech）
+
+| 数据源 | RSS Feed URL | 说明 |
+|--------|-------------|------|
+| **MIT News - Bioengineering** | `https://news.mit.edu/rss/topic/bioengineering-and-biotechnology` | MIT 生物工程 |
+| **Nature Biotechnology** | 需订阅 | 顶级学术期刊 |
+| **STAT News** | `https://statnews.com/feed` | 生物医药新闻 |
+| **Fierce Biotech** | `https://fiercebiotech.com/feed` | 生物科技行业 |
+
+#### 太空技术（Space Tech）
+
+| 数据源 | RSS Feed URL | 说明 |
+|--------|-------------|------|
+| **SpaceNews** | `https://spacenews.com/feed/` | 太空产业新闻 |
+| **Space.com** | `https://space.com/feeds/all` | 综合太空新闻 |
+| **NASA Blogs** | `https://blogs.nasa.gov/feed/` | 官方博客 |
+| **SpaceX Updates** | 社区生成 RSS | 发射更新 |
+| **Ars Technica - Space** | `https://arstechnica.com/tag/space/feed/` | 深度报道 |
+
+#### 机器人技术（Robotics）
+
+| 数据源 | RSS Feed URL | 说明 |
+|--------|-------------|------|
+| **IEEE Spectrum Robotics** | `https://spectrum.ieee.org/robotics/rss` | IEEE 机器人新闻 |
+| **The Robot Report** | `https://therobotreport.com/feed` | 机器人产业 |
+| **Boston Dynamics News** | 官方新闻稿 | 人形机器人 |
+| **Tesla Bot News** | 通过 Tesla 官方 | Optimus 进展 |
+
+### 6.8 AI 与科技聚合源（一站式监控）
+
+#### 聚合 RSS 服务
+
+| 服务 | URL | 聚合范围 | 说明 |
+|------|-----|---------|------|
+| **Planet AI** [^98^] | `https://planet-ai.net/rss.xml` | OpenAI, Anthropic, Google AI, Meta, Hugging Face 等 30+ 源 | 单一 Feed 监控所有 AI 新闻 |
+| **GitHub Awesome RSSHub** [^78^] | `https://github.com/JackyST0/awesome-rsshub-routes` | 中文 RSSHub 路由精选 | 适合中文用户 |
+| **RSSHub** | `https://rsshub.app/` | 万能 RSS 生成器 | 可为无 RSS 网站生成 Feed |
+| **Feedless** [^75^] | 第三方服务 | AI 公司新闻 | 为无 RSS 网站提供桥接 |
+
+#### 推荐 RSS 阅读器配置（针对 OpenClaw 项目）
+
+```yaml
+# AI & Emerging Tech RSS 监控配置
+ai_tech_sources:
+  tier_1_must_have:
+    - openai_news: "https://openai.com/news/rss.xml"
+    - deepmind: "https://deepmind.google/blog/rss.xml"
+    - google_ai: "https://blog.google/technology/ai/rss/"
+    - huggingface: "https://huggingface.co/blog/feed.xml"
+    - arxiv_ai: "https://rss.arxiv.org/rss/cs.AI"
+    - mit_tech_review_ai: "https://www.technologyreview.com/topic/artificial-intelligence/feed/"
+
+  tier_2_important:
+    - bair: "https://bair.berkeley.edu/blog/feed.xml"
+    - stanford_ai: "https://ai.stanford.edu/blog/feed.xml"
+    - towards_data_science: "https://towardsdatascience.com/feed"
+    - venturebeat_ai: "https://venturebeat.com/category/ai/feed"
+    - techcrunch_ai: "https://techcrunch.com/category/artificial-intelligence/feed"
+    - coindesk: "https://coindesk.com/feed"
+    - roadtovr: "https://roadtovr.com/feed"
+
+  tier_3_supplementary:
+    - ai_news: "https://www.artificialintelligence-news.com/feed/rss/"
+    - marktechpost: "https://marktechpost.com/feed/"
+    - decrypt: "https://decrypt.co/feed"
+    - uploadvr: "https://uploadvr.com/feed"
+
+  community_generated:
+    - anthropic_news: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_news.xml"
+    - anthropic_engineering: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_anthropic_engineering.xml"
+    - xai_news: "https://raw.githubusercontent.com/Olshansk/rss-feeds/main/feeds/feed_xainews.xml"
+```
+
+### 6.9 数据源使用建议
+
+**优先级配置策略：**
+
+1. **P0 级（立即告警）**：OpenAI、DeepMind、Google AI、Hugging Face 的博客更新
+   - 涉及：重大模型发布（如 GPT-5、Gemini 2.0）、API 变更、安全公告
+
+2. **P1 级（每日汇总）**：学术预印本（arXiv）、顶级媒体（MIT Tech Review）、主要社区
+   - 涉及：研究突破、行业趋势、重要产品发布
+
+3. **P2 级（每周摘要）**：二级市场媒体、垂直领域（量子、VR、生物）
+   - 涉及：深度分析、小众技术进展
+
+**内容过滤建议：**
+
+```python
+# AI 内容相关性评分关键词
+priority_keywords = [
+    "GPT", "Claude", "Gemini", "Llama", "open source model",
+    "AGI", "alignment", "safety", "multimodal", "reasoning",
+    "AI agents", "RAG", "fine-tuning", "prompt engineering",
+    "Neuralink", "robotics", "quantum advantage", "fusion energy"
+]
+
+# 过滤低质量内容
+exclude_keywords = [
+    "crypto scam", "get rich quick", "unverified claim",
+    "sponsored content", "affiliate marketing"
+]
+```
+
+**可靠性验证机制：**
+
+- **学术内容**：核实是否来自 arXiv 顶级类别（cs.AI、cs.LG、cs.CL）或顶级会议（NeurIPS、ICML、ACL）
+- **行业新闻**：交叉验证至少 2 个独立源（如 OpenAI 官方 + TechCrunch + The Verge）
+- **技术博客**：验证作者背景（是否来自知名实验室或公司）
+
 ## 7. 数据源质量评估与使用建议
 
 ### 数据质量分级体系
