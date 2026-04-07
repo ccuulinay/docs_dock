@@ -1,0 +1,23 @@
+{
+  "skill_name": "research-report-generations",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Research the current state of the global EV market in 2026 and generate a markdown report and professional HTML version. Save them as ev_market_report.md and ev_market_report.html in the current directory.",
+      "expected_output": "A markdown file 'ev_market_report.md' with a title, executive summary, key findings, detailed analysis, market reactions section, data tables, conclusion, and numbered sources with URLs. A standalone HTML file 'ev_market_report.html' using the Academic Editorial design system with navy/charcoal/gold styling, two-column sections, and responsive layout.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Analyze how markets and social media reacted to the latest Apple product launch. Generate a markdown report and an HTML report, then send the HTML report as an email to test@example.com with the markdown attached. Save files as apple_reaction_report.md, apple_reaction_report.html, and apple_reaction_report_email.html.",
+      "expected_output": "Three files: markdown report with findings and sources, web HTML with Premium Editorial styling, and email-compatible HTML. The email should be sent (or attempted) via the sending_email script with HTML body and markdown attachment.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Use the helper script to convert this markdown file into a professional HTML report. Save it as output_report.html.\n\n---\n\n# AI Safety Developments: Q1 2026\n\n## Executive Summary\n\nThe first quarter of 2026 saw significant regulatory and industry activity in AI safety, with new frameworks emerging from the EU, US, and major AI labs.\n\n## Key Findings\n\n- **Regulation**: The EU AI Act enforcement began for high-risk systems, with 340 compliance notices issued by March.\n- **Industry**: Anthropic, OpenAI, Google, and Meta published coordinated safety standards for frontier models.\n- **Research**: Mechanistic interpretability made notable advances, with three major papers on sparse autoencoders published in Nature.\n- **Investment**: AI safety startups raised $1.2B in Q1, a 45% increase from Q4 2025.\n\n## Market Reactions\n\nInvestors welcomed the coordinated industry standards, viewing them as a path to reduced regulatory uncertainty. Critics noted that the standards remain voluntary and lack third-party audit requirements.\n\n## Sector Breakdown\n\n| Sector | Investment ($M) | Notable Deals | Trend |\n|--------|----------------|---------------|-------|\n| Interpretability | 340 | 12 | +68% |\n| Red-teaming | 280 | 8 | +52% |\n| Governance | 310 | 6 | +31% |\n| Hardware | 270 | 4 | +22% |\n\n## Recommendations\n\n1. Monitor EU AI Act enforcement patterns for compliance benchmarking.\n2. Evaluate vendor adherence to the new coordinated safety standards.\n3. Increase interpretability research budgets given rapid advances.\n\n## Sources\n\n1. EU AI Act Enforcement Tracker, March 2026\n2. Frontier AI Safety Commitments Consortium\n3. Nature: Sparse Autoencoders Special Collection\n4. Crunchbase: AI Safety Funding Report Q1 2026",
+      "expected_output": "A standalone HTML file 'output_report.html' with Premium Editorial styling, proper two-column layout for summary and findings, a formatted data table for the sector breakdown, feature list for key findings, and a clean appendix for sources.",
+      "files": []
+    }
+  ]
+}
