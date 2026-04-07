@@ -34,7 +34,10 @@
 - 中国证券登记结算有限责任公司：http://www.chinaclear.cn/
 - 中国债券信息网：http://www.chinabond.com.cn/
 
-## 4. 权威媒体与官媒
+## 4. 上市公司与机构原始披露
+- 暂无
+
+## 5. 权威媒体与官媒
 - 新华社：http://www.news.cn/
 - 人民日报：http://www.people.com.cn/
 - 央视新闻：https://news.cctv.com/
@@ -46,7 +49,7 @@
 - 第一财经：https://www.yicai.com/
 - 财新网：https://www.caixin.com/
 
-## 5. 行业协会与研究机构
+## 6. 行业协会与研究机构
 - 中国银行业协会：https://www.china-cba.net/
 - 中国证券业协会：https://www.sac.net.cn/
 - 中国支付清算协会：http://www.pcac.org.cn/
@@ -55,7 +58,7 @@
 - 中国汽车工业协会：http://www.caam.org.cn/
 - 中国半导体行业协会：http://www.csia.net.cn/
 
-## 6. 重点科技企业官网
+## 7. 重点科技企业官网
 - 华为：https://www.huawei.com/cn/
 - 阿里巴巴：https://www.alibabagroup.com/
 - 腾讯：https://www.tencent.com/zh-cn/
@@ -64,7 +67,7 @@
 - 小米：https://www.mi.com/
 - 京东：https://www.jd.com/
 
-## 7. 建议优先跟踪的省市政府来源
+## 8. 建议优先跟踪的省市政府来源
 - 上海市人民政府：https://www.shanghai.gov.cn/
 - 北京市人民政府：http://www.beijing.gov.cn/
 - 广东省人民政府：http://www.gd.gov.cn/
@@ -73,7 +76,7 @@
 - 江苏省人民政府：http://www.jiangsu.gov.cn/
 - 浙江省人民政府：https://www.zj.gov.cn/
 
-## 8. 使用建议
+## 9. 使用建议
 - 优先使用官网、监管机构、交易所、企业公告作为“第一手来源”。
 - 媒体来源适合用于补充解读，不应替代原始政策或公告。
 - 建议按“金融 / 经济 / 科技”三个主题建立每日监测列表。
