@@ -1,0 +1,23 @@
+{
+  "skill_name": "news-to-opportunities",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "The People's Bank of China just announced a 25bps cut to the 1-year LPR (now 3.35%) and a 20bps cut to the 5-year LPR (now 3.65%), effective next Monday. This is the first rate cut in 10 months. Our wealth management team has seen deposit balances grow 15% YoY and we are concerned about net interest margin compression. We have quarterly strategic priority on AUM growth (+8% this quarter) and increasing fee income from wealth products. Our digital channels reach 12M monthly active users. Analyze this and give me your recommendations.",
+      "expected_output": "A structured analysis following the 6-part output format: executive summary, opportunity & risk map, key insights, digital marketing proposals, action items, and assumptions to validate. Should identify deposit-to-wealth switching opportunities, fixed-income product marketing angles, and mortgage refinancing risks.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "The State Council just released new guidelines expanding the third-pillar personal pension program. Key changes: (1) annual contribution cap raised from 12,000 to 24,000 RMB, (2) tax-deferred benefits extended to include more tier-2 cities, (3) pension account holders can now invest in select equity funds and bank wealth management products (not just deposits and money market funds), (4) early withdrawal penalties waived for first-home purchases and critical illness. Our retail banking KPIs this quarter emphasize: new customer acquisition (+200K net new), retail AUM growth (+5%), and digital adoption rate (+15%). We have a 35M existing deposit customer base with only 8% current pension account penetration.",
+      "expected_output": "A structured analysis identifying the pension policy expansion as a P0 opportunity. Should propose marketing campaigns targeting the 92% of deposit customers without pension accounts, product bundles combining pension accounts with fund investments, and specific channel strategies for tier-2 city expansion.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Ant Financial just launched 'Yu'e Bao Plus' - a new money market fund product offering 2.8% 7-day annualized yield (50bps above industry average) with instant redemption up to 500K RMB and seamless integration with Alipay's merchant payment network. Industry chatter suggests they secured special regulatory approval for this product. Our data shows we lost 3.2% of our 25-35 age group deposit base to Ant Financial last quarter. Our own money market fund yields 2.1% and we have no instant redemption feature above 10K. Our current strategic priorities: stabilize deposit base, improve digital engagement scores, and grow fee income. We have a competitive advantage in high-net-worth segments (AUM >500K) where Ant Financial has weak penetration.",
+      "expected_output": "A structured analysis treating this as a competitive threat. Should segment the response by customer tier: defensive tactics for mass-market/young customers losing deposits, offensive positioning for HNW segments where the bank has advantage. Must flag compliance concerns about Ant Financial's regulatory edge.",
+      "files": []
+    }
+  ]
+}
