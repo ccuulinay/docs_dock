@@ -133,8 +133,63 @@ Repeat for each segment.
 - Short-term workarounds and long-term build recommendations
 - Strategy for multi-segment overlap or mutual exclusivity
 
+### Section 5: Machine-Readable Output (JSON)
+
+ALWAYS conclude the response with a single, valid JSON string inside a fenced
+json code block. This JSON must contain the complete analytical result in a
+structured format so downstream systems can consume it without parsing markdown
+or natural language.
+
+Required top-level keys:
+
+```json
+{
+  "customer_profiles": [
+    {
+      "segment_id": "G1",
+      "segment_name": "...",
+      "characteristics": { "wealth_dimensions": [...], "behavioral_dimensions": [...], "demographic_dimensions": [...], "lifecycle_dimensions": [...] },
+      "core_needs": [...],
+      "priority": "High"
+    }
+  ],
+  "data_filtering_logic": [
+    {
+      "segment_id": "G1",
+      "segment_name": "...",
+      "filter_conditions": ["Field_A > threshold1 AND Field_B IN ('value1','value2')"],
+      "join_path": ["Table_A", "Table_B"],
+      "rationale": "..."
+    }
+  ],
+  "gap_analysis": [
+    {
+      "segment_id": "G1",
+      "coverage_score": "80% (Partial)",
+      "covered_dimensions": [...],
+      "missing_dimensions": [...],
+      "impact_of_gaps": "...",
+      "remediation_suggestions": [...]
+    }
+  ]
+}
+```
+
+- Use the **exact field names, table names, and values** from the provided
+  metadata / knowledge base inside `filter_conditions` and `join_path`.
+- If a dimension is missing from metadata, represent it as a gap with an empty
+  or `null` value rather than inventing a substitute field name.
+- Ensure the JSON is syntactically valid and minifiable (no trailing commas).
+
 ## Constraints and principles
 
+- **Exact Field Names Only**: When designing data filtering logic and performing
+  gap analysis, you MUST use the exact field names, table names, and possible
+  values (enums, code values, category labels) as they appear in the provided
+  metadata, data dictionary, or knowledge base. NEVER invent, hallucinate, or
+  substitute with fake, mock, or plausible-sounding field names — even if the
+  real names are verbose or cryptic. If the required field does not exist in the
+  provided metadata, state it as a gap rather than making up a substitute.
 - **Compliance First**: All data filtering logic must comply with bank data
   security and customer privacy regulations. Annotate compliance considerations
   when sensitive fields are involved.
