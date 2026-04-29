@@ -1,3 +1,842 @@
+## ST002
+```python
+#!/usr/bin/env python3
+"""
+Banking Marketing Agent - Streamlit Demo App
+Based on banking_marketing_agent.py
+"""
+
+import json
+import os
+import re
+import subprocess
+from dataclasses import dataclass, field
+from pathlib import Path
+
+import streamlit as st
+from dotenv import load_dotenv
+from openai import OpenAI
+
+load_dotenv(override=True)
+WORKDIR = Path.cwd()
+
+# ---------------------------------------------------------------------------
+# Config
+# ---------------------------------------------------------------------------
+MODEL = os.getenv("MOONSHOT_LATEST_MODEL")
+BASE_URL = os.getenv("MOONSHOT_BASE_URL")
+DEFAULT_API_KEY = os.getenv("MOONSHOT_API_KEY", "")
+
+PLAN_REMINDER_INTERVAL = 3
+CONTEXT_LIMIT = 50000
+KEEP_RECENT_TOOL_RESULTS = 3
+PERSIST_THRESHOLD = 30000
+PREVIEW_CHARS = 2000
+SKILLS_DIR = Path(__file__).parent / "skills"
+
+
+# ---------------------------------------------------------------------------
+# Load skill contents
+# ---------------------------------------------------------------------------
+@st.cache_data
+def load_skill_text(skill_name: str) -> str:
+    path = SKILLS_DIR / skill_name / "SKILL.md"
+    if not path.exists():
+        return ""
+    text = path.read_text()
+    match = re.match(r"^---\n(.*?)\n---\n(.*)", text, re.DOTALL)
+    if match:
+        return match.group(2).strip()
+    return text.strip()
+
+
+NEWS_SKILL_TEXT = load_skill_text("news-to-opportunities")
+PERSONA_SKILL_TEXT = load_skill_text("banking-marketing-persona")
+
+
+# ---------------------------------------------------------------------------
+# Intent Classification
+# ---------------------------------------------------------------------------
+INTENT_CLASSIFIER_PROMPT = """You are an intent classifier for a banking marketing assistant.
+Classify the user's input into exactly one of these categories:
+- "news_analysis": The user wants to analyze news, market signals, policy changes, economic data, or external events for banking/wealth management opportunities.
+- "persona_design": The user wants customer segmentation, persona design, campaign targeting, data filtering logic, marketing brief analysis, or SQL/rules for customer lists.
+- "out_of_scope": The input is not related to banking marketing, wealth management, retail banking, or financial services marketing.
+
+Respond with ONLY a JSON object in this exact format (no markdown, no extra text):
+{"intent": "news_analysis|persona_design|out_of_scope", "reason": "brief explanation"}
+"""
+
+
+def classify_intent(user_input: str, client: OpenAI, model: str) -> dict:
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": INTENT_CLASSIFIER_PROMPT},
+            {"role": "user", "content": user_input},
+        ],
+        max_tokens=500,
+        temperature=0.0,
+    )
+    content = response.choices[0].message.content.strip()
+    try:
+        cleaned = re.sub(r"^```json\s*", "", content)
+        cleaned = re.sub(r"```\s*$", "", cleaned)
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        lower = content.lower()
+        if "news_analysis" in lower:
+            return {"intent": "news_analysis", "reason": "heuristic fallback"}
+        if "persona_design" in lower:
+            return {"intent": "persona_design", "reason": "heuristic fallback"}
+        return {"intent": "out_of_scope", "reason": "Could not classify; defaulting to out of scope."}
+
+
+# ---------------------------------------------------------------------------
+# Todo Manager
+# ---------------------------------------------------------------------------
+@dataclass
+class PlanItem:
+    content: str
+    status: str = "pending"
+    active_form: str = ""
+
+
+@dataclass
+class PlanningState:
+    items: list[PlanItem] = field(default_factory=list)
+    rounds_since_update: int = 0
+
+
+class TodoManager:
+    def __init__(self):
+        self.state = PlanningState()
+
+    def update(self, items: list) -> str:
+        if len(items) > 12:
+            raise ValueError("Keep the session plan short (max 12 items)")
+        normalized = []
+        in_progress_count = 0
+        for index, raw in enumerate(items):
+            content = str(raw.get("content", "")).strip()
+            status = str(raw.get("status", "pending")).lower()
+            active_form = str(raw.get("activeForm", "")).strip()
+            if not content:
+                raise ValueError(f"Item {index}: content required")
+            if status not in {"pending", "in_progress", "completed"}:
+                raise ValueError(f"Item {index}: invalid status '{status}'")
+            if status == "in_progress":
+                in_progress_count += 1
+            normalized.append(PlanItem(content=content, status=status, active_form=active_form))
+        if in_progress_count > 1:
+            raise ValueError("Only one plan item can be in_progress")
+        self.state.items = normalized
+        self.state.rounds_since_update = 0
+        return self.render()
+
+    def note_round_without_update(self) -> None:
+        self.state.rounds_since_update += 1
+
+    def reminder(self) -> str | None:
+        if not self.state.items:
+            return None
+        if self.state.rounds_since_update < PLAN_REMINDER_INTERVAL:
+            return None
+        return "<reminder>Refresh your current plan before continuing.</reminder>"
+
+    def render(self) -> str:
+        if not self.state.items:
+            return "No session plan yet."
+        lines = []
+        for item in self.state.items:
+            marker = {"pending": "[ ]", "in_progress": ">", "completed": "[x]"}[item.status]
+            line = f"{marker} {item.content}"
+            if item.status == "in_progress" and item.active_form:
+                line += f" ({item.active_form})"
+            lines.append(line)
+        completed = sum(1 for i in self.state.items if i.status == "completed")
+        lines.append(f"\n({completed}/{len(self.state.items)} completed)")
+        return "\n".join(lines)
+
+
+# ---------------------------------------------------------------------------
+# Context Compaction
+# ---------------------------------------------------------------------------
+@dataclass
+class CompactState:
+    has_compacted: bool = False
+    last_summary: str = ""
+    recent_files: list[str] = field(default_factory=list)
+
+
+def estimate_context_size(messages: list) -> int:
+    return len(str(messages))
+
+
+def track_recent_file(state: CompactState, path: str) -> None:
+    if path in state.recent_files:
+        state.recent_files.remove(path)
+    state.recent_files.append(path)
+    if len(state.recent_files) > 5:
+        state.recent_files[:] = state.recent_files[-5:]
+
+
+def persist_large_output(tool_use_id: str, output: str) -> str:
+    if len(output) <= PERSIST_THRESHOLD:
+        return output
+    output_dir = WORKDIR / ".task_outputs" / "tool-results"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    stored_path = output_dir / f"{tool_use_id}.txt"
+    if not stored_path.exists():
+        stored_path.write_text(output)
+    preview = output[:PREVIEW_CHARS]
+    rel_path = stored_path.relative_to(WORKDIR)
+    return (
+        "<persisted-output>\n"
+        f"Full output saved to: {rel_path}\n"
+        "Preview:\n"
+        f"{preview}\n"
+        "</persisted-output>"
+    )
+
+
+def collect_tool_result_blocks(messages: list) -> list[tuple[int, dict]]:
+    return [(i, m) for i, m in enumerate(messages) if m.get("role") == "tool"]
+
+
+def micro_compact(messages: list) -> list:
+    tool_results = collect_tool_result_blocks(messages)
+    if len(tool_results) <= KEEP_RECENT_TOOL_RESULTS:
+        return messages
+    for _, block in tool_results[:-KEEP_RECENT_TOOL_RESULTS]:
+        content = block.get("content", "")
+        if not isinstance(content, str) or len(content) <= 120:
+            continue
+        block["content"] = "[Earlier tool result compacted. Re-run the tool if you need full detail.]"
+    return messages
+
+
+def summarize_history(messages: list, client: OpenAI, model: str) -> str:
+    conversation = json.dumps(messages, default=str)[:80000]
+    prompt = (
+        "Summarize this coding-agent conversation so work can continue.\n"
+        "Preserve:\n"
+        "1. The current goal\n"
+        "2. Important findings and decisions\n"
+        "3. Files read or changed\n"
+        "4. Remaining work\n"
+        "5. User constraints and preferences\n"
+        "Be compact but concrete.\n\n"
+        f"{conversation}"
+    )
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+        max_tokens=2000,
+    )
+    return response.choices[0].message.content.strip()
+
+
+def compact_history(messages: list, state: CompactState, client: OpenAI, model: str, focus: str | None = None) -> list:
+    summary = summarize_history(messages, client, model)
+    if focus:
+        summary += f"\n\nFocus to preserve next: {focus}"
+    if state.recent_files:
+        recent_lines = "\n".join(f"- {p}" for p in state.recent_files)
+        summary += f"\n\nRecent files to reopen if needed:\n{recent_lines}"
+    state.has_compacted = True
+    state.last_summary = summary
+    return [
+        {
+            "role": "user",
+            "content": (
+                "This conversation was compacted so the agent can continue working.\n\n"
+                f"{summary}"
+            ),
+        }
+    ]
+
+
+# ---------------------------------------------------------------------------
+# Base Tools
+# ---------------------------------------------------------------------------
+def safe_path(path_str: str) -> Path:
+    path = (WORKDIR / path_str).resolve()
+    if not path.is_relative_to(WORKDIR):
+        raise ValueError(f"Path escapes workspace: {path_str}")
+    return path
+
+
+def run_bash(command: str, tool_use_id: str = "") -> str:
+    dangerous = ["rm -rf /", "sudo", "shutdown", "reboot", "> /dev/"]
+    if any(d in command for d in dangerous):
+        return "Error: Dangerous command blocked"
+    try:
+        result = subprocess.run(
+            command,
+            shell=True,
+            cwd=WORKDIR,
+            capture_output=True,
+            text=True,
+            timeout=120,
+        )
+    except subprocess.TimeoutExpired:
+        return "Error: Timeout (120s)"
+    output = (result.stdout + result.stderr).strip() or "(no output)"
+    if tool_use_id:
+        return persist_large_output(tool_use_id, output)
+    return output
+
+
+def run_read(path: str, tool_use_id: str = "", state: CompactState | None = None, limit: int | None = None) -> str:
+    try:
+        if state:
+            track_recent_file(state, path)
+        lines = safe_path(path).read_text().splitlines()
+        if limit and limit < len(lines):
+            lines = lines[:limit] + [f"... ({len(lines) - limit} more lines)"]
+        output = "\n".join(lines)
+        if tool_use_id:
+            return persist_large_output(tool_use_id, output)
+        return output
+    except Exception as exc:
+        return f"Error: {exc}"
+
+
+def run_write(path: str, content: str) -> str:
+    try:
+        file_path = safe_path(path)
+        file_path.parent.mkdir(parents=True, exist_ok=True)
+        file_path.write_text(content)
+        return f"Wrote {len(content)} bytes to {path}"
+    except Exception as exc:
+        return f"Error: {exc}"
+
+
+def run_edit(path: str, old_text: str, new_text: str) -> str:
+    try:
+        file_path = safe_path(path)
+        content = file_path.read_text()
+        if old_text not in content:
+            return f"Error: Text not found in {path}"
+        file_path.write_text(content.replace(old_text, new_text, 1))
+        return f"Edited {path}"
+    except Exception as exc:
+        return f"Error: {exc}"
+
+
+CHILD_HANDLERS = {
+    "bash": lambda **kw: run_bash(kw["command"]),
+    "read_file": lambda **kw: run_read(kw["path"], limit=kw.get("limit")),
+    "write_file": lambda **kw: run_write(kw["path"], kw["content"]),
+    "edit_file": lambda **kw: run_edit(kw["path"], kw["old_text"], kw["new_text"]),
+}
+
+CHILD_TOOLS = [
+    {
+        "type": "function",
+        "function": {
+            "name": "bash",
+            "description": "Run a shell command.",
+            "parameters": {
+                "type": "object",
+                "properties": {"command": {"type": "string"}},
+                "required": ["command"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "read_file",
+            "description": "Read file contents.",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string"}, "limit": {"type": "integer"}},
+                "required": ["path"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "write_file",
+            "description": "Write content to a file.",
+            "parameters": {
+                "type": "object",
+                "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+                "required": ["path", "content"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "edit_file",
+            "description": "Replace exact text in a file once.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "old_text": {"type": "string"},
+                    "new_text": {"type": "string"},
+                },
+                "required": ["path", "old_text", "new_text"],
+            },
+        },
+    },
+]
+
+
+# ---------------------------------------------------------------------------
+# Subagent
+# ---------------------------------------------------------------------------
+SUBAGENT_SYSTEM = f"You are a coding subagent at {WORKDIR}. Complete the given task, then summarize your findings."
+
+
+def run_subagent(prompt: str, client: OpenAI, model: str, system_override: str | None = None) -> str:
+    system = system_override or SUBAGENT_SYSTEM
+    sub_messages = [{"role": "user", "content": prompt}]
+    for _ in range(30):
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "system", "content": system}] + sub_messages,
+            tools=CHILD_TOOLS,
+            max_tokens=8000,
+        )
+        msg = response.choices[0].message
+        assistant_msg = {
+            "role": "assistant",
+            "content": msg.content or "",
+            "reasoning_content": getattr(msg, "reasoning_content", None) or "",
+        }
+        if msg.tool_calls:
+            assistant_msg["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+                }
+                for tc in msg.tool_calls
+            ]
+        sub_messages.append(assistant_msg)
+        if not msg.tool_calls:
+            break
+        results = []
+        for tc in msg.tool_calls:
+            handler = CHILD_HANDLERS.get(tc.function.name)
+            try:
+                args = json.loads(tc.function.arguments)
+                output = handler(**args) if handler else f"Unknown tool: {tc.function.name}"
+            except Exception as exc:
+                output = f"Error: {exc}"
+            results.append({"role": "tool", "tool_call_id": tc.id, "content": str(output)[:50000]})
+        sub_messages.extend(results)
+    last = sub_messages[-1]
+    if last.get("role") == "assistant":
+        return last.get("content", "") or "(no summary)"
+    return "(no summary)"
+
+
+# ---------------------------------------------------------------------------
+# Internal Banking Marketing Tools
+# ---------------------------------------------------------------------------
+NEWS_AGENT_SYSTEM = f"""You are the News-to-Opportunities Analysis Agent.
+Your job is to transform external market signals and internal business data into actionable commercial opportunities for wealth management and retail banking.
+
+{NEWS_SKILL_TEXT}
+"""
+
+PERSONA_AGENT_SYSTEM = f"""You are the Banking Marketing Persona Designer Agent.
+Your job is to analyze banking/wealth-management marketing campaigns and translate them into precise customer-segmentation logic and data-filtering rules.
+
+{PERSONA_SKILL_TEXT}
+"""
+
+
+def run_news_analysis(prompt: str, client: OpenAI, model: str) -> str:
+    st.toast("Running news-to-opportunities sub-agent...")
+    return run_subagent(prompt, client, model, system_override=NEWS_AGENT_SYSTEM)
+
+
+def run_persona_design(prompt: str, client: OpenAI, model: str) -> str:
+    st.toast("Running banking-marketing-persona sub-agent...")
+    return run_subagent(prompt, client, model, system_override=PERSONA_AGENT_SYSTEM)
+
+
+# ---------------------------------------------------------------------------
+# Decline Message
+# ---------------------------------------------------------------------------
+DECLINE_MESSAGE = (
+    "I'm a specialized banking marketing assistant, focused on wealth management and retail banking marketing. "
+    "I can help you with:\n"
+    "  - Analyzing news, market signals, or policy changes for banking opportunities\n"
+    "  - Designing customer personas, segmentation logic, and campaign targeting\n\n"
+    "Your request doesn't seem to fall within these areas. "
+    "Could you share a banking or wealth-management marketing topic you'd like to explore?"
+)
+
+
+# ---------------------------------------------------------------------------
+# Parent Tool Schemas & System
+# ---------------------------------------------------------------------------
+SYSTEM = f"""You are a specialized banking marketing assistant at {WORKDIR}.
+Your capabilities are focused on two areas:
+1. **News-to-Opportunities Analysis**: Analyze market news, policy changes, and economic signals to produce actionable banking/wealth management recommendations.
+2. **Banking Marketing Persona Design**: Translate marketing campaigns into precise customer segmentation logic and data-filtering rules.
+
+Use tools to solve tasks. Act, don't explain.
+Use the todo tool for multi-step work. Keep exactly one step in_progress.
+Use the task tool to delegate exploration or subtasks.
+Use compact if the conversation gets too long.
+
+Available internal tools:
+- analyze_news_opportunities: For market intelligence, news analysis, opportunity/risk identification, and digital marketing recommendations.
+- design_marketing_persona: For customer segmentation, persona design, campaign targeting logic, and data-filtering rules.
+"""
+
+PARENT_TOOLS = CHILD_TOOLS + [
+    {
+        "type": "function",
+        "function": {
+            "name": "todo",
+            "description": "Rewrite the current session plan for multi-step work.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "items": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "content": {"type": "string"},
+                                "status": {"type": "string", "enum": ["pending", "in_progress", "completed"]},
+                                "activeForm": {"type": "string", "description": "Optional present-continuous label."},
+                            },
+                            "required": ["content", "status"],
+                        },
+                    }
+                },
+                "required": ["items"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "task",
+            "description": "Spawn a subagent with fresh context. It shares the filesystem but not conversation history.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string"},
+                    "description": {"type": "string", "description": "Short description of the task"},
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "analyze_news_opportunities",
+            "description": "Analyze news, market signals, or external events to identify banking/wealth management opportunities and produce structured marketing recommendations.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "The full user request including any news content, context, or questions."},
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "design_marketing_persona",
+            "description": "Design customer personas, segmentation logic, and data-filtering rules for a banking/wealth management marketing campaign.",
+            "parameters": {
+                "type": "object",
+                "properties": {
+                    "prompt": {"type": "string", "description": "The full user request including marketing plan, campaign brief, or segmentation requirements."},
+                },
+                "required": ["prompt"],
+            },
+        },
+    },
+    {
+        "type": "function",
+        "function": {
+            "name": "compact",
+            "description": "Summarize earlier conversation so work can continue in a smaller context.",
+            "parameters": {
+                "type": "object",
+                "properties": {"focus": {"type": "string"}},
+            },
+        },
+    },
+]
+
+
+def extract_text(message: dict) -> str:
+    content = message.get("content", "")
+    return content.strip() if isinstance(content, str) else ""
+
+
+def execute_tool(name: str, args: dict, tool_id: str, state: CompactState, client: OpenAI, model: str, todo: TodoManager) -> str:
+    if name == "bash":
+        return run_bash(args["command"], tool_id)
+    if name == "read_file":
+        return run_read(args["path"], tool_id, state, args.get("limit"))
+    if name == "write_file":
+        return run_write(args["path"], args["content"])
+    if name == "edit_file":
+        return run_edit(args["path"], args["old_text"], args["new_text"])
+    if name == "todo":
+        return todo.update(args["items"])
+    if name == "compact":
+        return "Compacting conversation..."
+    if name == "analyze_news_opportunities":
+        return run_news_analysis(args.get("prompt", ""), client, model)
+    if name == "design_marketing_persona":
+        return run_persona_design(args.get("prompt", ""), client, model)
+    return f"Unknown tool: {name}"
+
+
+# ---------------------------------------------------------------------------
+# Agent Loop
+# ---------------------------------------------------------------------------
+def agent_loop(messages: list, state: CompactState, client: OpenAI, model: str, todo: TodoManager) -> None:
+    max_turns = 10
+    for _ in range(max_turns):
+        messages[:] = micro_compact(messages)
+        if estimate_context_size(messages) > CONTEXT_LIMIT:
+            st.toast("Auto-compacting conversation...")
+            messages[:] = compact_history(messages, state, client, model)
+
+        response = client.chat.completions.create(
+            model=model,
+            messages=[{"role": "system", "content": SYSTEM}] + messages,
+            tools=PARENT_TOOLS,
+            tool_choice="auto",
+            max_tokens=8000,
+        )
+        message = response.choices[0].message
+
+        assistant_msg = {
+            "role": "assistant",
+            "content": message.content or "",
+            "reasoning_content": getattr(message, "reasoning_content", None) or "",
+        }
+        if message.tool_calls:
+            assistant_msg["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in message.tool_calls
+            ]
+        messages.append(assistant_msg)
+
+        if not message.tool_calls:
+            return
+
+        results = []
+        manual_compact = False
+        compact_focus = None
+        used_todo = False
+
+        for tc in message.tool_calls:
+            try:
+                args = json.loads(tc.function.arguments)
+            except Exception:
+                args = {}
+
+            if tc.function.name == "task":
+                desc = args.get("description", "subtask")
+                prompt = args.get("prompt", "")
+                st.toast(f"Running task: {desc}")
+                output = run_subagent(prompt, client, model)
+            else:
+                output = execute_tool(tc.function.name, args, tc.id, state, client, model, todo)
+
+            results.append({"role": "tool", "tool_call_id": tc.id, "content": str(output)})
+
+            if tc.function.name == "todo":
+                used_todo = True
+            if tc.function.name == "compact":
+                manual_compact = True
+                compact_focus = args.get("focus")
+
+        messages.extend(results)
+
+        if used_todo:
+            todo.state.rounds_since_update = 0
+        else:
+            todo.note_round_without_update()
+            reminder = todo.reminder()
+            if reminder:
+                messages.append({"role": "user", "content": reminder})
+
+        if manual_compact:
+            st.toast("Manual compact triggered...")
+            messages[:] = compact_history(messages, state, client, model, focus=compact_focus)
+
+
+# ---------------------------------------------------------------------------
+# Streamlit UI
+# ---------------------------------------------------------------------------
+def init_session_state():
+    if "messages" not in st.session_state:
+        st.session_state.messages = []
+    if "compact_state" not in st.session_state:
+        st.session_state.compact_state = CompactState()
+    if "todo" not in st.session_state:
+        st.session_state.todo = TodoManager()
+    if "api_key" not in st.session_state:
+        st.session_state.api_key = DEFAULT_API_KEY
+
+
+def clear_session():
+    st.session_state.messages = []
+    st.session_state.compact_state = CompactState()
+    st.session_state.todo = TodoManager()
+    st.toast("New session started!")
+
+
+def main():
+    st.set_page_config(
+        page_title="Banking Marketing Agent",
+        page_icon="🏦",
+        layout="wide",
+    )
+
+    init_session_state()
+
+    # Sidebar: API key and controls
+    with st.sidebar:
+        st.title("Controls")
+
+        api_key_input = st.text_input(
+            "API Key",
+            value=st.session_state.api_key,
+            type="password",
+            help="Enter your Moonshot API key. Stored only for this session.",
+        )
+        st.session_state.api_key = api_key_input
+
+        if st.button("🆕 New Session", use_container_width=True):
+            clear_session()
+            st.rerun()
+
+        st.divider()
+
+        # Display current plan
+        st.subheader("Session Plan")
+        plan_text = st.session_state.todo.render()
+        st.text(plan_text)
+
+        st.divider()
+        st.caption(
+            "Focused on: News-to-Opportunities & Persona Design"
+        )
+
+    # Validate API key
+    if not st.session_state.api_key:
+        st.warning("Please enter your API key in the sidebar to get started.")
+        return
+
+    client = OpenAI(
+        base_url=BASE_URL,
+        api_key=st.session_state.api_key,
+    )
+
+    if not MODEL:
+        st.error("MOONSHOT_LATEST_MODEL not configured in environment.")
+        return
+
+    # Main chat area
+    st.title("🏦 Banking Marketing Agent")
+    st.caption("Analyze news for banking opportunities or design customer personas for campaigns.")
+
+    # Display chat history
+    for msg in st.session_state.messages:
+        role = msg.get("role", "")
+        if role == "system":
+            continue
+
+        if role == "assistant":
+            with st.chat_message("assistant"):
+                content = msg.get("content", "")
+                if content:
+                    st.markdown(content)
+
+                tool_calls = msg.get("tool_calls", [])
+                if tool_calls:
+                    with st.expander("Tool Calls", expanded=False):
+                        for tc in tool_calls:
+                            st.json(tc)
+        elif role == "user":
+            with st.chat_message("user"):
+                st.markdown(msg.get("content", ""))
+        elif role == "tool":
+            with st.chat_message("assistant", avatar="🔧"):
+                content = msg.get("content", "")
+                if content:
+                    st.markdown(content)
+
+    # Chat input
+    if user_input := st.chat_input("Ask about banking marketing..."):
+        # Add user message to history and display
+        st.session_state.messages.append({"role": "user", "content": user_input})
+        with st.chat_message("user"):
+            st.markdown(user_input)
+
+        # Classify intent
+        with st.status("Classifying intent...", expanded=False) as status:
+            intent_result = classify_intent(user_input, client, MODEL)
+            intent = intent_result.get("intent", "out_of_scope")
+            status.update(label=f"Intent: {intent}", state="complete")
+
+        if intent == "out_of_scope":
+            with st.chat_message("assistant"):
+                st.markdown(DECLINE_MESSAGE)
+            st.session_state.messages.append({"role": "assistant", "content": DECLINE_MESSAGE})
+        else:
+            # Run agent loop
+            with st.spinner("Agent thinking..."):
+                try:
+                    agent_loop(
+                        st.session_state.messages,
+                        st.session_state.compact_state,
+                        client,
+                        MODEL,
+                        st.session_state.todo,
+                    )
+                except Exception as e:
+                    st.error(f"Agent error: {e}")
+                    return
+
+            # Display assistant response
+            last = st.session_state.messages[-1]
+            if last.get("role") == "assistant":
+                txt = extract_text(last)
+                if txt:
+                    with st.chat_message("assistant"):
+                        st.markdown(txt)
+
+        st.rerun()
+
+
+if __name__ == "__main__":
+    main()
+
+```
+
 ## banking agent
 ```python
 #!/usr/bin/env python3
